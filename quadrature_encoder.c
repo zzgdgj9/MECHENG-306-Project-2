@@ -39,14 +39,12 @@ int repc=1;      //repetition condition of PI controller
 int t0;          //memory of time for the Purpose of displaying the results
 int repeat=0;    //repeat indicator to only let the memory of time for the Purpose of displaying the results be updated once
 
-
-unsigned long clock = 0;
 uint16_t a1, a2;
+bool direction = false;
 bool a1_last = 0, a2_last = 0;
+volatile uint16_t clock = 0;
 uint16_t encoder_count = 0;
-volatile double speed = 0;
-
-
+double speed = 0;
 
 
 void setup() {
@@ -105,20 +103,20 @@ c=b;           //storing the current time
 
 while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for 15s
 {
-
-
-  uint16_t a1, a2;
-  bool a1_last, a2_last;
-  uint16_t encoder_count;
   a1 = analogRead(A1);
   a2 = analogRead(A2);
-  if (a1 <= 200 && a1_last) {
+  if (a1 <= 90 && a1_last) {
     a1_last = false;
     encoder_count++;
+    if (a1_last == a2_last) {
+      direction = true;
+    } else {
+      direction = false;
+    }
   } else if (a1 >= 490 && !a1_last) {
     a1_last = true;
     encoder_count++;
-  } else if (a2 <= 200 && a2_last) {
+  } else if (a2 <= 90 && a2_last) {
     a2_last = false;
     encoder_count++;
   } else if (a2 >= 490 && !a2_last) {
@@ -199,7 +197,7 @@ if (b%100==0)
   Serial.print(b-t0);
  
   Serial.print("  spontaneous speed from builtin encoder:  ");
-  rpmm=(s_2/(2*114))*600;                               //formulation for rpm in each 100ms for PI controller
+  rpmm=(s_2/(2*114))*600;                           //formulation for rpm in each 100ms for PI controller
   Serial.println(rpmm);
   s_2=0;                                                //reseting the counters of PI controller rpm meter
  
@@ -207,13 +205,12 @@ if (b%100==0)
  
   if ((b-t0)%5000==0)
   {
+  speed = encoder_count / 64.0 / (clock * 0.01) * 60;
   Serial.println();
   Serial.print("RPM from builtin encoder: ");
   Serial.println((s/(228))*12);                         //formula for rpm in each 5s
  
-  speed = encoder_count / 64.0 / (clock * 0.01) * 60;
-  encoder_count = 0;
-  clock = 0;
+  // speed = encoder_count / 64.0 / (clock * 0.01) * 60;
   Serial.print("RPM from optical quadrature encoder: ");
   Serial.println(speed);
  
@@ -226,12 +223,15 @@ if (b%100==0)
   Serial.print("  ,   ");
  
   Serial.print("direction read by sensor:  ");
-  Serial.println("");
+  if (direction) Serial.println("CW");
+  if (!direction) Serial.println("CCW");
   Serial.println();
 
 
   s=0;
   directionm=0;
+  clock = 0;
+  encoder_count = 0;
   }
   delay(1);
 }
@@ -288,7 +288,6 @@ b=millis();                                             //updating time
 analogWrite(6,0);                                       //turning off the motor
 exitt=1;                                                //changing the exit condition to prevent the motor to run after 15s
 }
-
 
 ISR(TIMER1_OVF_vect) {
   TCNT1 = 65380;
