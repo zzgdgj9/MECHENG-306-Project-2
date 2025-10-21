@@ -61,6 +61,7 @@ void setup() {
 
   // Enable Timer1 overflow interrupt
   TIMSK1 = (1 << TOIE1);
+  analogReference(DEFAULT);
     sei();
   // put your setup code here, to run on
   Serial.begin(250000);                  //Baud rate of communication
@@ -105,7 +106,7 @@ while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for
 {
   a1 = analogRead(A1);
   a2 = analogRead(A2);
-  if (a1 <= 90 && a1_last) {
+  if (a1 <= 200 && a1_last) {
     a1_last = false;
     encoder_count++;
     if (a1_last == a2_last) {
@@ -116,7 +117,7 @@ while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for
   } else if (a1 >= 490 && !a1_last) {
     a1_last = true;
     encoder_count++;
-  } else if (a2 <= 90 && a2_last) {
+  } else if (a2 <= 200 && a2_last) {
     a2_last = false;
     encoder_count++;
   } else if (a2 >= 490 && !a2_last) {
@@ -205,12 +206,11 @@ if (b%100==0)
  
   if ((b-t0)%5000==0)
   {
-  speed = encoder_count / 64.0 / (clock * 0.01) * 60;
   Serial.println();
   Serial.print("RPM from builtin encoder: ");
   Serial.println((s/(228))*12);                         //formula for rpm in each 5s
  
-  // speed = encoder_count / 64.0 / (clock * 0.01) * 60;
+  speed = encoder_count / 64.0 / (clock * 0.01) * 60;
   Serial.print("RPM from optical quadrature encoder: ");
   Serial.println(speed);
  
