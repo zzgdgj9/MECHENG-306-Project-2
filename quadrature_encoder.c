@@ -39,32 +39,32 @@ int repc=1;      //repetition condition of PI controller
 int t0;          //memory of time for the Purpose of displaying the results
 int repeat=0;    //repeat indicator to only let the memory of time for the Purpose of displaying the results be updated once
 
-uint16_t a1, a2;
-bool direction = false;
-bool a1_last = 0, a2_last = 0;
-volatile uint16_t clock = 0;
-uint16_t encoder_count = 0;
-double speed = 0;
+uint16_t a1, a2; // output analog signal from Arduino Pin A1 and A2
+bool direction = false; // indicator for if the direction of the motor is clockwise. 
+bool a1_last = 0, a2_last = 0; // Store the previous output analog signal from pin A1 and A2. false represent low, true represent high
+volatile uint16_t clock = 0; // time counter
+uint16_t encoder_count = 0; // implement encoder count, sum of the two channels
+double speed = 0; // the speed of the motor
 
 
 void setup() {
+  // put your setup code here, to run on
+  Serial.begin(250000);                  //Baud rate of communication
+
   cli();
   pinMode(6, OUTPUT);
-  pinMode(13, INPUT);
   TCCR1A = 0;                 // Normal mode
   TCCR1B = (1 << CS12) | (1 << CS10);  // Prescaler = 1024
 
 
-  // Preload TCNT1 for 1-second overflow
+  // Preload TCNT1 for 0.01 second overflow
   TCNT1 = 65380;
-
 
   // Enable Timer1 overflow interrupt
   TIMSK1 = (1 << TOIE1);
+  
   analogReference(DEFAULT);
-    sei();
-  // put your setup code here, to run on
-  Serial.begin(250000);                  //Baud rate of communication
+  sei();
 
 
   Serial.println("Enter the desired RPM.");  
@@ -76,9 +76,6 @@ void setup() {
     //Wait for user input
   }  
 
-
-  // Enable Timer1 overflow interrupt
-  TIMSK1 = (1 << TOIE1);
  
    RPM = Serial.readString().toFloat(); //Reading the Input string from Serial port.
   if (RPM<0)
@@ -105,37 +102,25 @@ c=b;           //storing the current time
 while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for 15s
 {
   a1 = analogRead(A1);
-  a2 = analogRead(A2);
-  if (a1 <= 200 && a1_last) {
-    a1_last = false;
-    encoder_count++;
+  a2 = analogRead(A2); // Read the analog signal from pin A1 and A2
+  if (a1 <= 270 && a1_last) { // when the analog signal at pin A1 lower than the LOW threshold, and previous reading is HIGH
+    a1_last = false; // update the previous reading to LOW
+    encoder_count++; // increment the encoder count
     if (a1_last == a2_last) {
-      direction = true;
+      direction = true; // The motor direction is CW if the updated previous reading signal at A1 is the same as previous reading signal at A2
     } else {
-      direction = false;
+      direction = false; // The motor direction is CCW if the updated previous reading signal at A1 is differ to previous reading signal at A2
     }
-  } else if (a1 >= 490 && !a1_last) {
-    a1_last = true;
-    encoder_count++;
-  } else if (a2 <= 200 && a2_last) {
+  } else if (a1 >= 490 && !a1_last) { // when the analog signal at pin A1 higher than the HIGH threshold, and previous reading is LOW
+    a1_last = true; // update the previous reading to HIGH
+    encoder_count++; // increment the encoder count
+  } else if (a2 <= 270 && a2_last) { // same logic apply to pin A2
     a2_last = false;
     encoder_count++;
   } else if (a2 >= 490 && !a2_last) {
     a2_last = true;
     encoder_count++;
   }
-
-
-
-
-  // if (((count / 32) % 10 == 0) && (count / 32 != 0) && i == (count / 32 / 10)) {
-  //   Serial.print(i * 10);
-  //   Serial.println(" round");
-  //   i++;
-  // }
-
-
-
 
  
   if (b%13==0 && repc==1)                   //PI controller
@@ -210,7 +195,7 @@ if (b%100==0)
   Serial.print("RPM from builtin encoder: ");
   Serial.println((s/(228))*12);                         //formula for rpm in each 5s
  
-  speed = encoder_count / 64.0 / (clock * 0.01) * 60;
+  speed = encoder_count / 64.0 / (clock * 0.01) * 60; // calculate the measured rpm by implement encoder
   Serial.print("RPM from optical quadrature encoder: ");
   Serial.println(speed);
  
@@ -230,8 +215,8 @@ if (b%100==0)
 
   s=0;
   directionm=0;
-  clock = 0;
-  encoder_count = 0;
+  clock = 0; // reset the time counter.
+  encoder_count = 0; // reset the encoder count
   }
   delay(1);
 }
@@ -289,6 +274,7 @@ analogWrite(6,0);                                       //turning off the motor
 exitt=1;                                                //changing the exit condition to prevent the motor to run after 15s
 }
 
+// Timer interrupt, each time overflow, overwrite the TCNT1 value as 65380 for 0.01 second overflow, and increment the time counter.
 ISR(TIMER1_OVF_vect) {
   TCNT1 = 65380;
   clock++;
