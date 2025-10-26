@@ -1,14 +1,12 @@
-float deg = 45;     // Desired rotation (user input)
-float s = 0;        // Built-in encoder counts
-int sm1 = 0;        // Built-in encoder channel A
-int sm2 = 0;        // Built-in encoder channel B
-int r = 0;          // toggle flag for incremental encoder counting
-
-float er = 0;       // PI proportional error
-float eri = 0;      // PI integral sum
-
-int t = 0;          // time ms
-int t0 = 0;         // memory for start time
+float deg = 45;
+float s = 0;
+int sm1 = 0;
+int sm2 = 0;
+int r = 0;
+float er = 0;
+float eri = 0;
+int t = 0;
+int t0 = 0;
 
 int finish = 0;
 int rep = 1;
@@ -23,21 +21,21 @@ const int grayPins[5] = {9, 10, 11, 12, 13}; // MSB..LSB
 int readGrayCode() {
   int g = 0;
   for (int i = 0; i < 5; ++i)
-    g = (g << 1) | (digitalRead(grayPins[i]) & 0x1);
+    g = (g << 1) | (digitalRead(grayPins[i]) & 0x1); // Read 5 digital bits and combine
   return g;
 }
 
 // ---- Gray to binary ----
 int grayToBinary(int gray) {
   int bin = gray;
-  while (gray >>= 1) bin ^= gray;
+  while (gray >>= 1) bin ^= gray; // Successive XOR to decode Gray to binary
   return bin;
 }
 
 // ---- Convert binary 0–31 to degrees ----
 float indexToDeg(int idx) {
   idx = (idx % 32 + 32) % 32;
-  return idx * 11.25;
+  return idx * 11.25; // 11.25° per Gray-code step
 }
 
 // ---- Read absolute encoder (deg) relative to calibration ----
@@ -45,18 +43,18 @@ float readAbsoluteEncoderDeg() {
   int raw = readGrayCode();
   int bin = grayToBinary(raw);
 
-  int diffSteps = bin - grayRef;
-  if (diffSteps > 16) diffSteps -= 32;
-  if (diffSteps < -16) diffSteps += 32;
+  int diffSteps = bin - grayRef; // diffrence from refrence position
+  if (diffSteps > 16) diffSteps -= 32; //CW
+  if (diffSteps < -16) diffSteps += 32; //CCW
 
   return diffSteps * 11.25; // signed displacement
 }
 
 // ---- Calibrate current Gray encoder as home ----
 void calibrateGrayEncoder() {
-  int raw = readGrayCode();
-  int bin = grayToBinary(raw);
-  grayRef = bin;
+  int raw = readGrayCode(); // read raw gray code
+  int bin = grayToBinary(raw); //combine to binary
+  grayRef = bin; // save current position as starting reference
   absPrev = 0;
  
 }
@@ -64,14 +62,14 @@ void calibrateGrayEncoder() {
 // ---- Direction update ----
 void updateDirection() {
   float absNow = readAbsoluteEncoderDeg();
-  float delta = absNow - absPrev;
+  float delta = absNow - absPrev; // change in angle 
 
   if (delta > 180.0) delta -= 360.0;
   if (delta < -180.0) delta += 360.0;
 
-  const float threshold = 2.0; // deg
-  if (delta > threshold) dir = +1;
-  else if (delta < -threshold) dir = -1;
+  const float threshold = 11.25; // deg
+  if (delta > threshold) dir = +1; //CW
+  else if (delta < -threshold) dir = -1; //CCW
   else dir = 0;
 
   absPrev = absNow;
@@ -130,7 +128,8 @@ void loop() {
 
     // Update direction every 100 ms
     static unsigned long lastDirCheck = 0;
-    if ((millis() - lastDirCheck > 100)&dir==0) {
+    // if we already have the direction than it will not be updated untill next rep
+    if ((millis() - lastDirCheck > 100)&dir==0) { 
       updateDirection();
       lastDirCheck = millis();
     }
@@ -159,6 +158,7 @@ void loop() {
     else Serial.println("Direction: Still");
     Serial.println("============================\n");
 
+    //reset everything for next rep
     s = 0;
     finish = 0;
     analogWrite(6, 0);

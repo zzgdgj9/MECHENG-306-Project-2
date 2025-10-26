@@ -1,13 +1,10 @@
 int b=0; //reading the time for main loop to be run for 15s
 int c=0; //memory for the time in mainloop
 
-
 float s=0;   //built-in encoder counts
 float s_2;   //built-in encoder counts for RPM calculation for PI controler
 
-
 float rpmm;  //rpm obtained each 5s from built-in encoder
-
 
 int s1=0;    //built-in encoder chanel one outpot
 int s2=0;    //built-in encoder chanel two outpot
@@ -17,17 +14,7 @@ int directionm=0;  //indicator for direction read by built-in encoder
 int dirm;          //indicator for direction read by built-in encode
 int RPM;           //Commanded RPM
 
-
 int exitt=0;       //mainloop exit condition
-
-
-
-
-
-
-
-
-
 
 float ctrl;      //PI controller outpot
 float kp=.4;     //proportional gain of PI controller
@@ -56,7 +43,6 @@ void setup() {
   TCCR1A = 0;                 // Normal mode
   TCCR1B = (1 << CS12) | (1 << CS10);  // Prescaler = 1024
 
-
   // Preload TCNT1 for 0.01 second overflow
   TCNT1 = 65380;
 
@@ -66,10 +52,7 @@ void setup() {
   analogReference(DEFAULT);
   sei();
 
-
   Serial.println("Enter the desired RPM.");  
-
-
  
   while (Serial.available() == 0)  
   {
@@ -85,24 +68,16 @@ void setup() {
   RPM=abs(RPM);
 }
 
-
 void loop() {
 
+  b=millis();    //reading time
+  c=b;           //storing the current time
 
-
-
-b=millis();    //reading time
-c=b;           //storing the current time
-
-
-
-
-
-
-while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for 15s
-{
+  while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for 15s
+  {
   a1 = analogRead(A1);
   a2 = analogRead(A2); // Read the analog signal from pin A1 and A2
+
   if (a1 <= 270 && a1_last) { // when the analog signal at pin A1 lower than the LOW threshold, and previous reading is HIGH
     a1_last = false; // update the previous reading to LOW
     encoder_count++; // increment the encoder count
@@ -121,7 +96,6 @@ while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for
     a2_last = true;
     encoder_count++;
   }
-
  
   if (b%13==0 && repc==1)                   //PI controller
   {
@@ -134,15 +108,6 @@ while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for
   {
     repc=1;
   }
-
-
-
-
-
-
-
-
-
 
   s1=digitalRead(7);           //reading Chanel 1 of builtin encoder
   s2=digitalRead(8);           //reading Chanel 2 of builtin encoder
@@ -161,21 +126,12 @@ while ((b>=c) && (b<=(c+15500)) && exitt==0)   //let the main loop to be run for
   r=0;                                                  // this indicator wont let this condition, (sm1 == sm2), to be counted until the next condition, (sm1 != sm2), happens
  }
 
-
- 
-
-
-
-
 b=millis();                                             //updating time
 if (b%100<=1 && repeat==0)
 {
   t0=b;                                                 //storing the current time once
   repeat=1;
 }
-
-
-
 
 if (b%100==0)
 {
@@ -186,8 +142,6 @@ if (b%100==0)
   rpmm=(s_2/(2*114))*600;                           //formulation for rpm in each 100ms for PI controller
   Serial.println(rpmm);
   s_2=0;                                                //reseting the counters of PI controller rpm meter
- 
- 
  
   if ((b-t0)%5000==0)
   {
@@ -221,36 +175,17 @@ if (b%100==0)
   delay(1);
 }
 
-
-
-
-
-
-
-
-
-
 if((s1==HIGH)&&(s2==HIGH)&&(s2m==LOW))                  //reading the direction of motor by cheaking which chanel follows which
 {
   directionm=directionm+1;
 }
 
-
 if((s1==LOW)&&(s2==LOW)&&(s2m==HIGH))
 {
   directionm=directionm+1;
 }
-
-
-
-
  
 s2m=s2;                                                 //memory of the previous builtin encoder chanel 2
-
-
-
-
-
 
 if (directionm>100)
 {
@@ -261,14 +196,7 @@ if (directionm<20)
   dirm=1;
 }
 
-
-
-
-
-
 b=millis();                                             //updating time
-
-
 }
 analogWrite(6,0);                                       //turning off the motor
 exitt=1;                                                //changing the exit condition to prevent the motor to run after 15s
